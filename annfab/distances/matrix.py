@@ -5,7 +5,6 @@ import nearpy.distances
 
 class MatrixDistance(nearpy.distances.Distance):
     def __init__(self, scalar_distance):
-
         self._scalar_distance = scalar_distance
 
     def distance(self, x, y):
