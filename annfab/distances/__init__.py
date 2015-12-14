@@ -1,4 +1,3 @@
 from .matrix_cosine import MatrixCosineDistance
 
-
-__all__ = [MatrixCosineDistance,]
+__all__ = [MatrixCosineDistance, ]
