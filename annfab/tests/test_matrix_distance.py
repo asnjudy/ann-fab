@@ -5,9 +5,11 @@ import nearpy.distances
 
 
 def test_init_matrix_distance():
-    d = annfab.distances.MatrixCosineDistance()
+    CD = nearpy.distances.CosineDistance()
 
-    assert d is not None
+    md = annfab.distances.MatrixDistance(CD)
+
+    assert md is not None
 
 
 def test_matrix_distance_for_vector_is_distance():
