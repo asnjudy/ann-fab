@@ -22,3 +22,26 @@ def test_matrix_distance_for_vector_is_distance():
     md = mD.distance(x, y)
 
     assert vd == md
+
+
+def test_matrix_distance_y_is_matrix():
+    n = 100
+    m = 10
+    x = np.random.randn(n)
+    y0 = np.random.randn(n)
+
+    y = np.empty((n,m))
+
+    for i in xrange(m):
+        y[:, i] = y0
+
+    vD = nearpy.distances.CosineDistance()
+    vd = vD.distance(x, y0)
+
+    mD = annfab.distances.MatrixCosineDistance()
+    md = mD.distance(x, y)
+
+    assert len(md) == m
+
+    for i in xrange(m):
+        assert md[i] == vd
