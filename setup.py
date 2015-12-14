@@ -12,8 +12,8 @@ from setuptools.command.test import test as TestCommand
 __location__ = os.path.join(
     os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe())))
 
-
 project_name = 'annfab'
+
 
 def read_version(package):
     with open(os.path.join(package, '__init__.py'), 'r') as fd:
@@ -70,4 +70,4 @@ setup(name=project_name,
       tests_require=['pytest-cov', 'pytest'],
       cmdclass={'test': PyTest},
       test_suite='tests',
-      include_package_data=True,)
+      include_package_data=True, )

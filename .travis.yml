@@ -1,9 +1,14 @@
 language: python
 python:
-  - "pypy"
   - "2.7"
-  - "3.4"
-  - "3.5"
+sudo: false
+addons:
+  apt:
+    packages:
+    - python-numpy
+    - python-scipy
+virtualenv:
+  system_site_packages: true
 install:
   - pip install -e .
   - pip install coveralls
