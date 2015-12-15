@@ -1,26 +1,37 @@
 import numpy as np
 
 import nearpy.distances
+import nearpy.utils
 
 
 class MatrixDistance(nearpy.distances.Distance):
     def __init__(self, scalar_distance):
-        self._scalar_distance = scalar_distance
+        self._scalar_distance = scalar_distance.distance
 
     def distance(self, x, y):
-        if len(x.shape) <= 1:
-            return self._scalar_distance.distance(x, y)
-
         assert x.shape[0] == y.shape[0]
 
-        k = x.shape[1]
-        if len(y.shape) > 1:
-            m = y.shape[1]
-        else:
-            m = 1
+        x_nd = len(x.shape)
+        y_nd = len(y.shape)
 
-        d = np.empty((k, m), dtype=np.dtype(x[0, 0]))
-        for i in xrange(k):
-            d[i, :] = self._scalar_distance.distance(x[:, i], y)
+        if x_nd == 1 and y_nd == 1:
+            d = self._scalar_distance(x, y)
+        elif x_nd == 1:
+            m = y.shape[1]
+            d = np.empty(m, dtype=np.dtype(x[0]))
+            for i in range(m):
+                d[i] = self._scalar_distance(x, y[:,i])
+        elif y_nd == 1:
+            k = x.shape[1]
+            d = np.empty(k, dtype=np.dtype(x[0,0]))
+            for i in range(k):
+                d[i] = self._scalar_distance(x[:,i], y)
+        else:
+            k = x.shape[1]
+            m = y.shape[1]
+            d = np.empty((k, m), dtype=np.dtype(x[0, 0]))
+            for j in xrange(m):
+                for i in xrange(k):
+                    d[i,j] = self._scalar_distance(x[:,i], y[:,j])
 
         return d
