@@ -9,7 +9,7 @@ import nearpy.distances
                 params=[(0, 0), (0, 1), (1, 0), (1, 1), (0, 5), (1, 5), (6, 0),
                         (6, 1), (6, 5)])
 def xy_data(request):
-    N = 100
+    N = 10
     k = request.param[0]
     m = request.param[1]
 
@@ -19,16 +19,16 @@ def xy_data(request):
     if k == 0:
         x = x0
     else:
-        x = np.random.randn(N, k)
+        x = np.random.randn(k, N)
         for i in xrange(k):
-            x[:, i] = x0
+            x[i, :] = x0
 
     if m == 0:
         y = y0
     else:
-        y = np.random.randn(N, m)
+        y = np.random.randn(m, N)
         for i in xrange(m):
-            y[:, i] = y0
+            y[i, :] = y0
 
     data = {'N': N, 'k': k, 'm': m, 'x0': x0, 'y0': y0, 'x': x, 'y': y}
 
