@@ -1,7 +1,6 @@
 import numpy as np
 
 import nearpy.distances
-import nearpy.utils
 
 
 class MatrixDistance(nearpy.distances.Distance):
@@ -20,18 +19,18 @@ class MatrixDistance(nearpy.distances.Distance):
             m = y.shape[1]
             d = np.empty(m, dtype=np.dtype(x[0]))
             for i in range(m):
-                d[i] = self._scalar_distance(x, y[:,i])
+                d[i] = self._scalar_distance(x, y[:, i])
         elif y_nd == 1:
             k = x.shape[1]
-            d = np.empty(k, dtype=np.dtype(x[0,0]))
+            d = np.empty(k, dtype=np.dtype(x[0, 0]))
             for i in range(k):
-                d[i] = self._scalar_distance(x[:,i], y)
+                d[i] = self._scalar_distance(x[:, i], y)
         else:
             k = x.shape[1]
             m = y.shape[1]
             d = np.empty((k, m), dtype=np.dtype(x[0, 0]))
             for j in xrange(m):
                 for i in xrange(k):
-                    d[i,j] = self._scalar_distance(x[:,i], y[:,j])
+                    d[i, j] = self._scalar_distance(x[:, i], y[:, j])
 
         return d

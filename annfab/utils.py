@@ -13,5 +13,3 @@ def is_1d(x):
         return True
 
     return False
-
-
