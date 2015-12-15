@@ -21,8 +21,6 @@ def hash_function(request):
                                                    1234),
     ]
 
-
-
     return hash_function_map[request.param]
 
 
