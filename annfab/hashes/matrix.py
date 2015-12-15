@@ -12,10 +12,9 @@ class MatrixHash(nearpy.hashes.LSHash):
 
         d = []
         for i in xrange(v.shape[0]):
-            d.append(self._scalar_hash.hash_vector(v[i,:], querying))
+            d.append(self._scalar_hash.hash_vector(v[i,:], querying)[0])
 
         return d
     
     def reset(self, dim):
         self._scalar_hash.reset(dim)
-
