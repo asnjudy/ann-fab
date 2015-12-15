@@ -16,22 +16,21 @@ class MatrixFilter(nearpy.filters.VectorFilter):
             dists = None
 
         if np.isscalar(vectors):
-            return [v,]
+            return [v, ]
 
         v_nd = len(vectors.shape)
 
         if v_nd == 1:
-            return [v,]
+            return [v, ]
         else:
             expanded = []
             if dists is None:
                 for i in xrange(vectors.shape[0]):
-                    expanded.append((vectors[i,:], data[i]))
+                    expanded.append((vectors[i, :], data[i]))
             else:
                 for i in xrange(vectors.shape[0]):
-                    expanded.append((vectors[i,:], data[i], dists[i]))
+                    expanded.append((vectors[i, :], data[i], dists[i]))
             return expanded
-
 
     def expand(self, input_list):
 
@@ -47,7 +46,6 @@ class MatrixFilter(nearpy.filters.VectorFilter):
                 expanded_list.append(e)
 
         return expanded_list
-
 
     def filter_vectors(self, input_list):
         """
