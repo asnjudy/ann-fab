@@ -1,100 +1,67 @@
 import numpy as np
+import pytest
 
 import annfab.distances
 import nearpy.distances
 
 
-def test_init_matrix_distance():
-    CD = nearpy.distances.CosineDistance()
+@pytest.fixture(scope="module",
+                params=[(0, 0), (0, 1), (1, 0), (1, 1), (0, 5), (1, 5), (6, 0),
+                        (6, 1), (6, 5)])
+def xy_data(request):
+    N = 100
+    k = request.param[0]
+    m = request.param[1]
 
-    md = annfab.distances.MatrixDistance(CD)
+    x0 = np.random.randn(N)
+    y0 = np.random.randn(N)
 
-    assert md is not None
+    if k == 0:
+        x = x0
+    else:
+        x = np.random.randn(N, k)
+        for i in xrange(k):
+            x[:, i] = x0
 
-
-def test_matrix_distance_for_vector_is_distance():
-    n = 100
-    x = np.random.randn(n)
-    y = np.random.randn(n)
-
-    vD = nearpy.distances.CosineDistance()
-    vd = vD.distance(x, y)
-
-    mD = annfab.distances.MatrixCosineDistance()
-    md = mD.distance(x, y)
-
-    assert vd == md
-
-
-def test_matrix_distance_y_is_matrix():
-    n = 100
-    m = 10
-    x = np.random.randn(n)
-    y0 = np.random.randn(n)
-
-    y = np.empty((n, m))
-
-    for i in xrange(m):
-        y[:, i] = y0
-
-    vD = nearpy.distances.CosineDistance()
-    vd = vD.distance(x, y0)
-
-    mD = annfab.distances.MatrixCosineDistance()
-    md = mD.distance(x, y)
-
-    assert len(md) == m
-
-    for i in xrange(m):
-        assert md[i] == vd
-
-
-def test_matrix_distance_x_is_matrix():
-    n = 100
-    k = 5
-    x0 = np.random.randn(n)
-    y = np.random.randn(n)
-
-    x = np.empty((n, k))
-    for i in xrange(k):
-        x[:, i] = x0
-
-    vD = nearpy.distances.CosineDistance()
-    vd = vD.distance(x0, y)
-
-    mD = annfab.distances.MatrixCosineDistance()
-    md = mD.distance(x, y)
-
-    assert len(md) == k
-
-    for i in xrange(k):
-        assert md[i] == vd
-
-
-def test_matrix_distance_x_and_y_are_matrices():
-    n = 100
-    m = 10
-    k = 5
-    x0 = np.random.randn(n)
-    y0 = np.random.randn(n)
-
-    y = np.empty((n, m))
-    x = np.empty((n, k))
-
-    for i in xrange(m):
-        y[:, i] = y0
-
-    for i in xrange(k):
-        x[:, i] = x0
-
-    vD = nearpy.distances.CosineDistance()
-    vd = vD.distance(x0, y0)
-
-    mD = annfab.distances.MatrixCosineDistance()
-    md = mD.distance(x, y)
-
-    assert md.shape == (k, m)
-
-    for j in xrange(k):
+    if m == 0:
+        y = y0
+    else:
+        y = np.random.randn(N, m)
         for i in xrange(m):
-            assert md[j, i] == vd
+            y[:, i] = y0
+
+    data = {'N': N, 'k': k, 'm': m, 'x0': x0, 'y0': y0, 'x': x, 'y': y}
+
+    return data
+
+
+def test_cosine_matrix_distance(xy_data):
+    vD = nearpy.distances.CosineDistance()
+    vd = vD.distance(xy_data['x0'], xy_data['y0'])
+
+    mD = annfab.distances.MatrixDistance(vD)
+    md = mD.distance(xy_data['x'], xy_data['y'])
+
+    # assert md.shape == (xy_data['k'], xy_data['m'])
+
+    np.testing.assert_almost_equal(vd, md)
+
+
+def test_euclidean_matrix_distance(xy_data):
+    vD = nearpy.distances.EuclideanDistance()
+    vd = vD.distance(xy_data['x0'], xy_data['y0'])
+
+    mD = annfab.distances.MatrixDistance(vD)
+    md = mD.distance(xy_data['x'], xy_data['y'])
+
+    np.testing.assert_almost_equal(vd, md)
+
+
+def test_manhattan_matrix_distance(xy_data):
+    vD = nearpy.distances.ManhattanDistance()
+    vd = vD.distance(xy_data['x0'], xy_data['y0'])
+
+    mD = annfab.distances.MatrixDistance(vD)
+    md = mD.distance(xy_data['x'], xy_data['y'])
+
+    np.testing.assert_almost_equal(vd, md)
