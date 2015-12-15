@@ -35,19 +35,17 @@ def xy_data(request):
     return data
 
 
-def test_cosine_matrix_distance(xy_data):
+def test_cosine_matrix_distance_adapter(xy_data):
     vD = nearpy.distances.CosineDistance()
     vd = vD.distance(xy_data['x0'], xy_data['y0'])
 
     mD = annfab.distances.MatrixDistance(vD)
     md = mD.distance(xy_data['x'], xy_data['y'])
 
-    # assert md.shape == (xy_data['k'], xy_data['m'])
-
     np.testing.assert_almost_equal(vd, md)
 
 
-def test_euclidean_matrix_distance(xy_data):
+def test_euclidean_matrix_distance_adapter(xy_data):
     vD = nearpy.distances.EuclideanDistance()
     vd = vD.distance(xy_data['x0'], xy_data['y0'])
 
@@ -57,11 +55,21 @@ def test_euclidean_matrix_distance(xy_data):
     np.testing.assert_almost_equal(vd, md)
 
 
-def test_manhattan_matrix_distance(xy_data):
+def test_manhattan_matrix_distance_adapter(xy_data):
     vD = nearpy.distances.ManhattanDistance()
     vd = vD.distance(xy_data['x0'], xy_data['y0'])
 
     mD = annfab.distances.MatrixDistance(vD)
+    md = mD.distance(xy_data['x'], xy_data['y'])
+
+    np.testing.assert_almost_equal(vd, md)
+
+
+def test_cosine_matrix_distance(xy_data):
+    vD = nearpy.distances.CosineDistance()
+    vd = vD.distance(xy_data['x0'], xy_data['y0'])
+
+    mD = annfab.distances.MatrixCosineDistance()
     md = mD.distance(xy_data['x'], xy_data['y'])
 
     np.testing.assert_almost_equal(vd, md)

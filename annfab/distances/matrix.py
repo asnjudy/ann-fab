@@ -4,6 +4,13 @@ import nearpy.distances
 
 
 class MatrixDistance(nearpy.distances.Distance):
+    """
+    A class for calculating the discance measure between matrices.
+
+    This class wraps a nearpy distance class for the calculation of the
+    individual distance elements.
+    """
+
     def __init__(self, scalar_distance):
         self._scalar_distance = scalar_distance.distance
 
