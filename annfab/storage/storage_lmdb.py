@@ -19,25 +19,38 @@ class LmdbStorage(MemoryStorage):
         else:
             self.data_conversion = noop
 
+        self.cache = {}
+
+    def fill_cache(self):
+        with self.lmdb_env.begin() as txn:
+            cursor = txn.cursor()
+            iter(cursor)
+            for key, value in cursor:
+                self.cache[key] = self.data_conversion(value)
+
     def _data_exists(self, data):
+        if data in self.cache:
+            return True
         with self.lmdb_env.begin() as txn:
             return txn.get(data) is not None
 
     def _get_bucket_item(self, data):
-        assert self._data_exists(data)
+        try:
+            value = self.cache[data]
+        except:
+            with self.lmdb_env.begin() as txn:
+                value = txn.get(data)
+                assert value is not None
+                value = self.data_conversion(value)
+                self.cache[data] = value
 
-        with self.lmdb_env.begin() as txn:
-            value = txn.get(data)
-            assert value is not None
-
-            return self.data_conversion(value), data
+        return value, data
 
     def store_vector(self, hash_name, bucket_key, v, data):
         """
         Stores vector and JSON-serializable data in bucket with specified key.
         """
 
-        # TODO: Ensure that the vector exists in the database
         assert self._data_exists(data)
 
         # Store only the data (not the vector) in memory.
@@ -59,3 +72,10 @@ class LmdbStorage(MemoryStorage):
             buckets[i] = self._get_bucket_item(buckets[i][1])
 
         return buckets
+
+    def get_config(self):
+        return {'buckets': self.buckets, 'hash_configs': self.hash_configs}
+
+    def apply_config(self, config):
+        self.buckets = config['buckets']
+        self.hash_configs = config['hash_configs']
