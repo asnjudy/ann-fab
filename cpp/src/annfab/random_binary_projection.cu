@@ -88,8 +88,8 @@ void RandomBinaryProjection<Dtype>::hash_matrix(Dtype* data) {
   CUDA_CHECK(cudaMemcpy(_input_data_d, data, sizeof(Dtype) * _dim * _batch_size, cudaMemcpyHostToDevice));
   
   // do the projection
-  annfab_gpu_gemm(_handle, CUBLAS_OP_N, CUBLAS_OP_N, _projection_count, _batch_size, _dim,
-    Dtype(1.0), _projection_matrix, _input_data_d, Dtype(0.0),
+  annfab_gpu_gemm(_handle, CUBLAS_OP_N, CUBLAS_OP_N, _batch_size, _projection_count, _dim,
+    Dtype(1.0), _input_data_d, _projection_matrix, Dtype(0.0),
     _output_data_d);
   int bla = _projection_count * _batch_size;
   
