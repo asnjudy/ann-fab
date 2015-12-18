@@ -22,3 +22,4 @@ include_directories ("${annfab_INCLUDE_DIR}/src")
 
 # add the source file subdirectory (and run its cmake file)
 add_subdirectory(src/annfab)
+add_subdirectory(python)
