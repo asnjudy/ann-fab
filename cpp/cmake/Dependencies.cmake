@@ -24,3 +24,8 @@ if(PYTHONLIBS_FOUND AND NUMPY_FOUND AND Boost_PYTHON_FOUND)
   include_directories(SYSTEM ${PYTHON_INCLUDE_DIRS} ${NUMPY_INCLUDE_DIR} ${Boost_INCLUDE_DIRS})
   list(APPEND annfab_LINKER_LIBS ${PYTHON_LIBRARIES} ${Boost_LIBRARIES})
 endif()
+
+# ---[ BLAS
+find_package(OpenBLAS REQUIRED)
+include_directories(SYSTEM ${OpenBLAS_INCLUDE_DIR})
+list(APPEND annfab_LINKER_LIBS ${OpenBLAS_LIB})
