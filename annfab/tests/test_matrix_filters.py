@@ -63,19 +63,6 @@ def test_expand_item_vector():
     assert expanded[0] == items
 
 
-def test_matrix_unique_filter_adapter(test_data):
-    vF = nearpy.filters.UniqueFilter()
-    vf = vF.filter_vectors(test_data['il0'])
-
-    mF = annfab.filters.MatrixFilter(vF)
-    mf = mF.filter_vectors(test_data['il'])
-
-    assert vf is not None
-    for i in xrange(test_data['k']):
-        assert all(vf[i][0] == mf[i][0])
-        assert vf[i][1] == mf[i][1]
-
-
 def test_matrix_filter_expand_items(test_data):
     mF = annfab.filters.MatrixFilter(nearpy.filters.VectorFilter)
 
@@ -96,3 +83,17 @@ def test_matrix_filter_expand(test_data):
     for i in xrange(test_data['k']):
         assert all(expanded[i][0] == test_data['il0'][i][0])
         assert expanded[i][1] == test_data['il0'][i][1]
+
+
+
+def test_matrix_unique_filter_adapter(test_data):
+    vF = nearpy.filters.UniqueFilter()
+    vf = vF.filter_vectors(test_data['il0'])
+
+    mF = annfab.filters.MatrixFilter(vF)
+    mf = mF.filter_vectors(test_data['il'])
+
+    assert vf is not None
+    for i in xrange(test_data['k']):
+        assert all(vf[i][0] == mf[i][0])
+        assert vf[i][1] == mf[i][1]
