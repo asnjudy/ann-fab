@@ -53,57 +53,9 @@ using std::endl;
     const int ANNFAB_CUDA_NUM_THREADS = 512;
 #endif
 
-// CUDA: number of blocks for threads.
-inline int ANNFAB_GET_BLOCKS(const int N) {
-  return (N + ANNFAB_CUDA_NUM_THREADS - 1) / ANNFAB_CUDA_NUM_THREADS;
-}
-
 #endif
 
 }  // namespace annfab
 
-
-
-#ifndef CPU_ONLY
-//
-// CUDA macros
-//
-
-// CUDA: various checks for different function calls.
-#define CUDA_CHECK(condition) \
-  /* Code block avoids redefinition of cudaError_t error */ \
-  do { \
-    cudaError_t error = condition; \
-    if (error !=  cudaSuccess) {std::cout << " " << cudaGetErrorString(error) << std::endl; assert(false); } \
-  } while (0)
-
-#define CUBLAS_CHECK(condition) \
-  do { \
-    cublasStatus_t status = condition; \
-    if (status !=  CUBLAS_STATUS_SUCCESS) {std::cout << " " << annfab::cublasGetErrorString(status) << std::endl; assert(false); } \
-  } while (0)
-
-// CUDA: grid stride looping
-#define CUDA_KERNEL_LOOP(i, n) \
-  for (int i = blockIdx.x * blockDim.x + threadIdx.x; \
-       i < (n); \
-       i += blockDim.x * gridDim.x)
-
-// CUDA: check for error after kernel execution and exit loudly if there is one.
-#define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
-
-#define CURAND_CHECK(condition) \
-  do { \
-    curandStatus_t status = condition; \
-    if (status !=  CURAND_STATUS_SUCCESS) { std::cout << annfab::curandGetErrorString(status) << std::endl; assert(false); } \
-  } while (0)
-
-namespace annfab {
-
-const char* cublasGetErrorString(cublasStatus_t error);
-const char* curandGetErrorString(curandStatus_t error);
-
-}  // namespace annfab
-#endif  // CPU_ONLY
 
 #endif  // ANNFAB_COMMON_HPP_

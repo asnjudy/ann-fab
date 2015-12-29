@@ -1,19 +1,28 @@
 #include "annfab/math_functions.hpp"
 #include "annfab/random_binary_projection.hpp"
+
+#ifndef CPU_ONLY
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <curand.h>
+#include "cublas_v2.h"
+#include "annfab/annfab_cuda_utils.hpp"
+#endif
+
 #include "assert.h"
 
 namespace annfab {
 
 #ifndef CPU_ONLY
 void gpu_rng_gaussian(curandGenerator_t& gen, const int n, float* r) {
-  CURAND_CHECK(curandGenerateNormal(gen, r, n, float(0), float(1)));
+  assert_on_cuda_error(curandGenerateNormal(gen, r, n, float(0), float(1)));
 }
 
 void gpu_rng_gaussian(curandGenerator_t& gen, const int n, double* r) {
-  CURAND_CHECK(curandGenerateNormalDouble(gen, r, n, double(0), double(1)));
+  assert_on_cuda_error(curandGenerateNormalDouble(gen, r, n, double(0), double(1)));
 }
 #endif
-  
+
 template<typename Dtype>
 RandomBinaryProjection<Dtype>::RandomBinaryProjection(int projection_count, int batch_size, int dim, int rand_seed, bool use_gpu)
   : _projection_count(projection_count), _dim(dim), _batch_size(batch_size), _GPU(use_gpu) {
@@ -24,13 +33,13 @@ RandomBinaryProjection<Dtype>::RandomBinaryProjection(int projection_count, int 
 #ifdef CPU_ONLY
     NO_GPU;
 #else
-    CURAND_CHECK(curandCreateGenerator(&_gen, 
+    assert_on_cuda_error(curandCreateGenerator(&_gen,
                   CURAND_RNG_PSEUDO_DEFAULT));
     // set GPU RNG seed
-    CURAND_CHECK(curandSetPseudoRandomGeneratorSeed(_gen, 
+    assert_on_cuda_error(curandSetPseudoRandomGeneratorSeed(_gen,
                 rand_seed));
     // create handle
-    CUBLAS_CHECK(cublasCreate(&_handle));
+    assert_on_cuda_error(cublasCreate(&_handle));
 #endif
   } else {
     // set CPU RNG seed
@@ -49,11 +58,11 @@ RandomBinaryProjection<Dtype>::~RandomBinaryProjection() {
     cudaFree(_output_data_d);
     cudaFree(_output_chars_d);
     cudaFree(_input_data_d);
-    CURAND_CHECK(curandDestroyGenerator(_gen));
+    assert_on_cuda_error(curandDestroyGenerator(_gen));
     cublasDestroy(_handle);
 #endif
   } else {
-    free(_projection_matrix_h); 
+    free(_projection_matrix_h);
   }
 }
 
@@ -89,7 +98,7 @@ void RandomBinaryProjection<Dtype>::set_batch_size(int batch_size) {
 
 template<typename Dtype>
 void RandomBinaryProjection<Dtype>::hash_matrix_cpu(Dtype* data) {
-  
+
 }
 
 template<typename Dtype>
@@ -98,13 +107,13 @@ void RandomBinaryProjection<Dtype>::_alloc_projection_data(bool free_first) {
   int proj_dim = _dim * _projection_count;
   if (proj_dim % 2 != 0)
     ++proj_dim;
-    
+
   if(_GPU) {
 #ifndef CPU_ONLY
     // free the last projection matrix if needed
     if(free_first)
       cudaFree(_projection_matrix_d);
-    CUDA_CHECK(cudaMalloc(&_projection_matrix_d, sizeof(Dtype) * proj_dim));
+    assert_on_cuda_error(cudaMalloc(&_projection_matrix_d, sizeof(Dtype) * proj_dim));
     gpu_rng_gaussian(_gen, proj_dim, _projection_matrix_d);
 #endif
   } else {
@@ -121,10 +130,10 @@ void RandomBinaryProjection<Dtype>::_alloc_input_data(bool free_first) {
 #ifndef CPU_ONLY
   if(_GPU) {
     if(free_first)
-      cudaFree(_input_data_d); 
-    
+      cudaFree(_input_data_d);
+
     // create new input data array
-    CUDA_CHECK(cudaMalloc(&_input_data_d, sizeof(Dtype) * _dim * _batch_size));
+    assert_on_cuda_error(cudaMalloc(&_input_data_d, sizeof(Dtype) * _dim * _batch_size));
   }
 #endif
 }
@@ -134,19 +143,19 @@ void RandomBinaryProjection<Dtype>::_alloc_output_data(bool free_first) {
   if(free_first) {
      free(_output_chars_h);
   }
-  
+
   _output_chars_h = (char*)malloc(sizeof(char) * _batch_size * _projection_count);
   if (!_output_chars_h)
     throw std::runtime_error("RandomBinaryProjection::_alloc_output_data: allocation failed\n");
-  
+
 #ifndef CPU_ONLY
   if(_GPU) {
     if(free_first) {
       cudaFree(_output_data_d);
       cudaFree(_output_chars_d);
     }
-    CUDA_CHECK(cudaMalloc(&_output_data_d, sizeof(Dtype) * _batch_size * _projection_count));
-    CUDA_CHECK(cudaMalloc(&_output_chars_d, sizeof(char) * _batch_size * _projection_count));
+    assert_on_cuda_error(cudaMalloc(&_output_data_d, sizeof(Dtype) * _batch_size * _projection_count));
+    assert_on_cuda_error(cudaMalloc(&_output_chars_d, sizeof(char) * _batch_size * _projection_count));
   }
 #endif
 }

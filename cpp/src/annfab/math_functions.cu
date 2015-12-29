@@ -1,5 +1,6 @@
 #include "annfab/common.hpp"
 #include "annfab/math_functions.hpp"
+#include "annfab/annfab_cuda_utils.hpp"
 
 namespace annfab {
 
@@ -11,7 +12,7 @@ void annfab_gpu_gemm<float>(cublasHandle_t handle, const cublasOperation_t Trans
   // Note that cublas follows fortran order.
   int lda = (TransA == CUBLAS_OP_N) ? K : M;
   int ldb = (TransB == CUBLAS_OP_N) ? N : K;
-  CUBLAS_CHECK(cublasSgemm(handle, TransB, TransA,
+  assert_on_cuda_error(cublasSgemm(handle, TransB, TransA,
       N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
 }
 
@@ -23,7 +24,7 @@ void annfab_gpu_gemm<double>(cublasHandle_t handle, const cublasOperation_t Tran
   // Note that cublas follows fortran order.
   int lda = (TransA == CUBLAS_OP_N) ? K : M;
   int ldb = (TransB == CUBLAS_OP_N) ? N : K;
-  CUBLAS_CHECK(cublasDgemm(handle, TransB, TransA,
+  assert_on_cuda_error(cublasDgemm(handle, TransB, TransA,
       N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
 }
 
