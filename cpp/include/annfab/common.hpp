@@ -43,7 +43,7 @@ using std::vector;
 using std::cout;
 using std::endl;
 
-#define NO_GPU throw std::runtime_error("Cannot use GPU in CPU-only Caffe: check mode.\n")
+#define NO_GPU throw std::runtime_error("Cannot use GPU in CPU-only mode: check mode.\n")
 
 #ifndef CPU_ONLY
 

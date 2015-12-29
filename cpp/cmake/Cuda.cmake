@@ -1,63 +1,6 @@
-
-################################################################################################
-# Removes duplicates from list(s)
-# Usage:
-#   annfab_list_unique(<list_variable> [<list_variable>] [...])
-macro(annfab_list_unique)
-  foreach(__lst ${ARGN})
-    if(${__lst})
-      list(REMOVE_DUPLICATES ${__lst})
-    endif()
-  endforeach()
-endmacro()
-
 # Known NVIDIA GPU achitectures Annfab can be compiled for.
 # This list will be used for CUDA_ARCH_NAME = All option
 set(Annfab_known_gpu_archs "20 21(20) 30 35 50")
-
-################################################################################################
-# A function for automatic detection of GPUs installed  (if autodetection is enabled)
-# Usage:
-#   annfab_detect_installed_gpus(out_variable)
-function(annfab_detect_installed_gpus out_variable)
-  if(NOT CUDA_gpu_detect_output)
-    set(__cufile ${PROJECT_BINARY_DIR}/detect_cuda_archs.cu)
-
-    file(WRITE ${__cufile} ""
-      "#include <cstdio>\n"
-      "int main()\n"
-      "{\n"
-      "  int count = 0;\n"
-      "  if (cudaSuccess != cudaGetDeviceCount(&count)) return -1;\n"
-      "  if (count == 0) return -1;\n"
-      "  for (int device = 0; device < count; ++device)\n"
-      "  {\n"
-      "    cudaDeviceProp prop;\n"
-      "    if (cudaSuccess == cudaGetDeviceProperties(&prop, device))\n"
-      "      std::printf(\"%d.%d \", prop.major, prop.minor);\n"
-      "  }\n"
-      "  return 0;\n"
-      "}\n")
-
-    execute_process(COMMAND "${CUDA_NVCC_EXECUTABLE}" "--run" "${__cufile}"
-                    WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/CMakeFiles/"
-                    RESULT_VARIABLE __nvcc_res OUTPUT_VARIABLE __nvcc_out
-                    ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
-
-    if(__nvcc_res EQUAL 0)
-      string(REPLACE "2.1" "2.1(2.0)" __nvcc_out "${__nvcc_out}")
-      set(CUDA_gpu_detect_output ${__nvcc_out} CACHE INTERNAL "Returned GPU architetures from annfab_detect_gpus tool" FORCE)
-    endif()
-  endif()
-
-  if(NOT CUDA_gpu_detect_output)
-    message(STATUS "Automatic GPU detection failed. Building for all known architectures.")
-    set(${out_variable} ${Annfab_known_gpu_archs} PARENT_SCOPE)
-  else()
-    set(${out_variable} ${CUDA_gpu_detect_output} PARENT_SCOPE)
-  endif()
-endfunction()
-
 
 ################################################################################################
 # Function for selecting GPU arch flags for nvcc based on CUDA_ARCH_NAME
@@ -67,10 +10,6 @@ function(annfab_select_nvcc_arch_flags out_variable)
   # List of arch names
   set(__archs_names "Fermi" "Kepler" "Maxwell" "All" "Manual")
   set(__archs_name_default "All")
-  if(NOT CMAKE_CROSSCOMPILING)
-    list(APPEND __archs_names "Auto")
-    set(__archs_name_default "Auto")
-  endif()
 
   # set CUDA_ARCH_NAME strings (so it will be seen as dropbox in CMake-Gui)
   set(CUDA_ARCH_NAME ${__archs_name_default} CACHE STRING "Select target NVIDIA GPU achitecture.")
@@ -80,12 +19,12 @@ function(annfab_select_nvcc_arch_flags out_variable)
   # verify CUDA_ARCH_NAME value
   if(NOT ";${__archs_names};" MATCHES ";${CUDA_ARCH_NAME};")
     string(REPLACE ";" ", " __archs_names "${__archs_names}")
-    message(FATAL_ERROR "Only ${__archs_names} architeture names are supported.")
+    message(FATAL_ERROR "Only ${__archs_names} architecture names are supported.")
   endif()
 
   if(${CUDA_ARCH_NAME} STREQUAL "Manual")
     set(CUDA_ARCH_BIN ${Annfab_known_gpu_archs} CACHE STRING "Specify 'real' GPU architectures to build binaries for, BIN(PTX) format is supported")
-    set(CUDA_ARCH_PTX "50"                     CACHE STRING "Specify 'virtual' PTX architectures to build PTX intermediate code for")
+    set(CUDA_ARCH_PTX "50"                      CACHE STRING "Specify 'virtual' PTX architectures to build PTX intermediate code for")
     mark_as_advanced(CUDA_ARCH_BIN CUDA_ARCH_PTX)
   else()
     unset(CUDA_ARCH_BIN CACHE)
@@ -100,8 +39,6 @@ function(annfab_select_nvcc_arch_flags out_variable)
     set(__cuda_arch_bin "50")
   elseif(${CUDA_ARCH_NAME} STREQUAL "All")
     set(__cuda_arch_bin ${Annfab_known_gpu_archs})
-  elseif(${CUDA_ARCH_NAME} STREQUAL "Auto")
-    annfab_detect_installed_gpus(__cuda_arch_bin)
   else()  # (${CUDA_ARCH_NAME} STREQUAL "Manual")
     set(__cuda_arch_bin ${CUDA_ARCH_BIN})
   endif()
@@ -111,7 +48,9 @@ function(annfab_select_nvcc_arch_flags out_variable)
   string(REGEX REPLACE "\\." "" __cuda_arch_ptx "${CUDA_ARCH_PTX}")
   string(REGEX MATCHALL "[0-9()]+" __cuda_arch_bin "${__cuda_arch_bin}")
   string(REGEX MATCHALL "[0-9]+"   __cuda_arch_ptx "${__cuda_arch_ptx}")
-  annfab_list_unique(__cuda_arch_bin __cuda_arch_ptx)
+  # Ensure that there are no duplicates in the lists:
+  list(REMOVE_DUPLICATES __cuda_arch_bin)
+  list(REMOVE_DUPLICATES __cuda_arch_ptx)
 
   set(__nvcc_flags "")
   set(__nvcc_archs_readable "")
@@ -171,32 +110,6 @@ macro(annfab_cuda_compile objlist_variable)
   set(${objlist_variable} ${cuda_objcs})
 endmacro()
 
-################################################################################################
-# Short command for cuDNN detection. Believe it soon will be a part of CUDA toolkit distribution.
-# That's why not FindcuDNN.cmake file, but just the macro
-# Usage:
-#   detect_cuDNN()
-function(detect_cuDNN)
-  set(CUDNN_ROOT "" CACHE PATH "CUDNN root folder")
-
-  find_path(CUDNN_INCLUDE cudnn.h
-            PATHS ${CUDNN_ROOT} $ENV{CUDNN_ROOT} ${CUDA_TOOLKIT_INCLUDE}
-            DOC "Path to cuDNN include directory." )
-
-  get_filename_component(__libpath_hist ${CUDA_CUDART_LIBRARY} PATH)
-  find_library(CUDNN_LIBRARY NAMES libcudnn.so # libcudnn_static.a
-                             PATHS ${CUDNN_ROOT} $ENV{CUDNN_ROOT} ${CUDNN_INCLUDE} ${__libpath_hist}
-                             DOC "Path to cuDNN library.")
-
-  if(CUDNN_INCLUDE AND CUDNN_LIBRARY)
-    set(HAVE_CUDNN  TRUE PARENT_SCOPE)
-    set(CUDNN_FOUND TRUE PARENT_SCOPE)
-
-    mark_as_advanced(CUDNN_INCLUDE CUDNN_LIBRARY CUDNN_ROOT)
-    message(STATUS "Found cuDNN (include: ${CUDNN_INCLUDE}, library: ${CUDNN_LIBRARY})")
-  endif()
-endfunction()
-
 
 ################################################################################################
 ###  Non macro section
@@ -214,16 +127,6 @@ message(STATUS "CUDA detected: " ${CUDA_VERSION})
 include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})
 list(APPEND annfab_LINKER_LIBS ${CUDA_CUDART_LIBRARY}
                               ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})
-
-# cudnn detection
-if(USE_CUDNN)
-  detect_cuDNN()
-  if(HAVE_CUDNN)
-    add_definitions(-DUSE_CUDNN)
-    include_directories(SYSTEM ${CUDNN_INCLUDE})
-    list(APPEND annfab_LINKER_LIBS ${CUDNN_LIBRARY})
-  endif()
-endif()
 
 # setting nvcc arch flags
 annfab_select_nvcc_arch_flags(NVCC_FLAGS_EXTRA)
@@ -250,14 +153,3 @@ endif()
 
 mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_VERBOSE_BUILD)
 mark_as_advanced(CUDA_SDK_ROOT_DIR CUDA_SEPARABLE_COMPILATION)
-
-# Handle clang/libc++ issue
-if(APPLE)
-  annfab_detect_darwin_version(OSX_VERSION)
-
-  # OSX 10.9 and higher uses clang/libc++ by default which is incompartible with old CUDA toolkits
-  if(OSX_VERSION VERSION_GREATER 10.8)
-    # enabled by default if and only if CUDA version is less than 7.0
-    annfab_option(USE_libstdcpp "Use libstdc++ instead of libc++" (CUDA_VERSION VERSION_LESS 7.0))
-  endif()
-endif()
