@@ -7,7 +7,7 @@ import argparse
 import annfab.storage
 import annfab.hasher
 try:
-    import annfab_examples.batch_hasher
+    import annfab.batch_hasher
 except:
     pass
 import annfab.utils
@@ -47,10 +47,10 @@ def generate_model():
 
     if args.batch_size == 1:
         # Create an image hasher.
-        hasher = annfab_examples.hasher.Hasher(
+        hasher = annfab.hasher.Hasher(
             storage, db_name, args.L, args.m)
     else:
-        hasher = annfab_examples.batch_hasher.BatchHasher(
+        hasher = annfab.batch_hasher.BatchHasher(
             storage, db_name, args.L, args.m)
         hasher.set_batch_size(args.batch_size)
 
