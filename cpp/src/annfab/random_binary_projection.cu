@@ -21,9 +21,9 @@ __global__ void ZeroOneKernel(const int n, Dtype* input_data, char* output_data)
 }
 
 template<typename Dtype>
-void RandomBinaryProjection<Dtype>::hash_matrix_gpu(Dtype* data) {
+void RandomBinaryProjection<Dtype>::_hash_matrix_gpu(const Dtype* query, char* hash) {
   // copy data to device
-  assert_on_cuda_error(cudaMemcpy(_input_data_d, data, sizeof(Dtype) * _dim * _batch_size, cudaMemcpyHostToDevice));
+  assert_on_cuda_error(cudaMemcpy(_input_data_d, query, sizeof(Dtype) * _dim * _batch_size, cudaMemcpyHostToDevice));
 
   // Perform the projection using a matrix-matrix multiplication
   annfab_gpu_gemm(_handle, CUBLAS_OP_N, CUBLAS_OP_N, _batch_size, _projection_count, _dim,
@@ -38,12 +38,12 @@ void RandomBinaryProjection<Dtype>::hash_matrix_gpu(Dtype* data) {
   assert_on_kernel_result();
 
   // copy data back to host
-  assert_on_cuda_error(cudaMemcpy(_output_chars_h, _output_chars_d, sizeof(char) * N, cudaMemcpyDeviceToHost));
+  assert_on_cuda_error(cudaMemcpy(hash, _output_chars_d, sizeof(char) * N, cudaMemcpyDeviceToHost));
 }
 
 // Instantiate float and double version of the functions above.
-template void RandomBinaryProjection<float>::hash_matrix_gpu(float* data);
-template void RandomBinaryProjection<double>::hash_matrix_gpu(double* data);
+template void RandomBinaryProjection<float>::_hash_matrix_gpu(const float* query, char* hash);
+template void RandomBinaryProjection<double>::_hash_matrix_gpu(const double* query, char* hash);
 
 }  // namespace annfab
 

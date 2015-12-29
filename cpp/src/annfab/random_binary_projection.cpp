@@ -58,7 +58,6 @@ RandomBinaryProjection<Dtype>::RandomBinaryProjection(int projection_count, int 
 
 template<typename Dtype>
 RandomBinaryProjection<Dtype>::~RandomBinaryProjection() {
-  free(_output_chars_h);
   if (_GPU) {
 #ifndef CPU_ONLY
     cudaFree(_projection_matrix_d);
@@ -105,15 +104,15 @@ void RandomBinaryProjection<Dtype>::set_batch_size(int batch_size) {
 }
 
 template<typename Dtype>
-void RandomBinaryProjection<Dtype>::hash_matrix_cpu(Dtype* data) {
+void RandomBinaryProjection<Dtype>::_hash_matrix_cpu(const Dtype* query, char* hash) {
   // do the projection
   annfab_cpu_gemm(CblasNoTrans,CblasNoTrans, _batch_size, _projection_count, _dim,
-    Dtype(1.0), data, _projection_matrix_h, Dtype(0.0),
+    Dtype(1.0), query, _projection_matrix_h, Dtype(0.0),
     _output_data_h);
   
   // now convert this to a bunch of characters
   for (int i = 0; i < _projection_count * _batch_size; ++i) {
-    _output_chars_h[i] = _output_data_h[i] > 0 ? '1' : '0';
+    hash[i] = _output_data_h[i] > 0 ? '1' : '0';
   }
 }
 
@@ -157,14 +156,6 @@ void RandomBinaryProjection<Dtype>::_alloc_input_data(bool free_first) {
 
 template<typename Dtype>
 void RandomBinaryProjection<Dtype>::_alloc_output_data(bool free_first) {
-  if(free_first) {
-     free(_output_chars_h);
-  }
-
-  _output_chars_h = (char*)malloc(sizeof(char) * _batch_size * _projection_count);
-  if (!_output_chars_h)
-    throw std::runtime_error("RandomBinaryProjection::_alloc_output_data: _output_chars_h allocation failed\n");
-
   if(_GPU) {
 #ifndef CPU_ONLY
     if(free_first) {
@@ -192,7 +183,7 @@ template void RandomBinaryProjection<float>::set_projection_count(int projection
 template void RandomBinaryProjection<double>::set_projection_count(int projection_count);
 template void RandomBinaryProjection<float>::set_batch_size(int batch_size);
 template void RandomBinaryProjection<double>::set_batch_size(int batch_size);
-template void RandomBinaryProjection<float>::hash_matrix_cpu(float* data);
-template void RandomBinaryProjection<double>::hash_matrix_cpu(double* data);
+template void RandomBinaryProjection<float>::_hash_matrix_cpu(const float* query, char* hash);
+template void RandomBinaryProjection<double>::_hash_matrix_cpu(const double* query, char* hash);
 
 }  // namespace annfab

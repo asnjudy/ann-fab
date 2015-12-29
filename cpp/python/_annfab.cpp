@@ -51,14 +51,15 @@ bp::object Hash_Matrix(RandomBinaryProjection<Dtype>& rbp, bp::object data_obj) 
     throw std::runtime_error("In annfab::Hash_Matrix input shape[0] must equal batch size");
   if (PyArray_DIMS(arr)[1] != rbp.get_dim())
     throw std::runtime_error("In annfab::Hash_Matrix input shape[1] must equal dim");
-  float* float_arr = static_cast<float*>(PyArray_DATA(arr));
-  rbp.hash_matrix(float_arr);
+  float* query_arr = static_cast<float*>(PyArray_DATA(arr));
   npy_intp dims[2];
   dims[0] = rbp.get_batch_size();
   dims[1] = rbp.get_projection_count();
-  PyObject *o = PyArray_SimpleNew(2, dims, NPY_CHAR);
-  memcpy(static_cast<float*>(PyArray_DATA((PyArrayObject*)o)),
-         rbp.get_output(), dims[0] * dims[1] *sizeof(char));
+  // allocate a numpy matrix where the results will be saved
+  PyObject *o = PyArray_SimpleNew(2, dims, NPY_STRING);
+  
+  // do hash and save results to the numpy matrix
+  rbp.hash_matrix(query_arr, static_cast<char*>(PyArray_DATA((PyArrayObject*)o)));
   bp::handle<> h(o);
   return bp::object(h);
 }
