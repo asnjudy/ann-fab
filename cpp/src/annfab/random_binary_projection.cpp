@@ -23,6 +23,13 @@ void gpu_rng_gaussian(curandGenerator_t& gen, const int n, double* r) {
 }
 #endif
 
+template <typename Dtype>
+void cpu_rng_gaussian(const shared_ptr<std::mt19937>& gen, const int n, Dtype* r) {
+  std::normal_distribution<> d(0,1);
+  for (int i = 0; i < n; ++i)
+    r[i] = d(*gen);
+}
+  
 template<typename Dtype>
 RandomBinaryProjection<Dtype>::RandomBinaryProjection(int projection_count, int batch_size, int dim, int rand_seed, bool use_gpu)
   : _projection_count(projection_count), _dim(dim), _batch_size(batch_size), _GPU(use_gpu) {
@@ -33,16 +40,16 @@ RandomBinaryProjection<Dtype>::RandomBinaryProjection(int projection_count, int 
 #ifdef CPU_ONLY
     NO_GPU;
 #else
-    assert_on_cuda_error(curandCreateGenerator(&_gen,
-                  CURAND_RNG_PSEUDO_DEFAULT));
+    assert_on_cuda_error(curandCreateGenerator(&_gpu_gen,
+                         CURAND_RNG_PSEUDO_DEFAULT));
     // set GPU RNG seed
-    assert_on_cuda_error(curandSetPseudoRandomGeneratorSeed(_gen,
-                rand_seed));
+    assert_on_cuda_error(curandSetPseudoRandomGeneratorSeed(_gpu_gen,
+                         rand_seed));
     // create handle
     assert_on_cuda_error(cublasCreate(&_handle));
 #endif
   } else {
-    // set CPU RNG seed
+    _cpu_gen.reset(new std::mt19937(rand_seed));
   }
   _alloc_input_data(false);
   _alloc_projection_data(false);
@@ -58,11 +65,12 @@ RandomBinaryProjection<Dtype>::~RandomBinaryProjection() {
     cudaFree(_output_data_d);
     cudaFree(_output_chars_d);
     cudaFree(_input_data_d);
-    assert_on_cuda_error(curandDestroyGenerator(_gen));
+    assert_on_cuda_error(curandDestroyGenerator(_gpu_gen));
     cublasDestroy(_handle);
 #endif
   } else {
-    free(_projection_matrix_h);
+    free(_output_data_h);
+    free(_projection_matrix_h); 
   }
 }
 
@@ -98,7 +106,15 @@ void RandomBinaryProjection<Dtype>::set_batch_size(int batch_size) {
 
 template<typename Dtype>
 void RandomBinaryProjection<Dtype>::hash_matrix_cpu(Dtype* data) {
-
+  // do the projection
+  annfab_cpu_gemm(CblasNoTrans,CblasNoTrans, _batch_size, _projection_count, _dim,
+    Dtype(1.0), data, _projection_matrix_h, Dtype(0.0),
+    _output_data_h);
+  
+  // now convert this to a bunch of characters
+  for (int i = 0; i < _projection_count * _batch_size; ++i) {
+    _output_chars_h[i] = _output_data_h[i] > 0 ? '1' : '0';
+  }
 }
 
 template<typename Dtype>
@@ -114,7 +130,7 @@ void RandomBinaryProjection<Dtype>::_alloc_projection_data(bool free_first) {
     if(free_first)
       cudaFree(_projection_matrix_d);
     assert_on_cuda_error(cudaMalloc(&_projection_matrix_d, sizeof(Dtype) * proj_dim));
-    gpu_rng_gaussian(_gen, proj_dim, _projection_matrix_d);
+    gpu_rng_gaussian(_gpu_gen, proj_dim, _projection_matrix_d);
 #endif
   } else {
     if(free_first)
@@ -122,6 +138,7 @@ void RandomBinaryProjection<Dtype>::_alloc_projection_data(bool free_first) {
     _projection_matrix_h = (Dtype*)malloc(sizeof(Dtype) * proj_dim);
     if (!_projection_matrix_h)
       throw std::runtime_error("RandomBinaryProjection::_alloc_projection_data: allocation failed\n");
+    cpu_rng_gaussian(_cpu_gen, proj_dim, _projection_matrix_h);
   }
 }
 
@@ -146,18 +163,25 @@ void RandomBinaryProjection<Dtype>::_alloc_output_data(bool free_first) {
 
   _output_chars_h = (char*)malloc(sizeof(char) * _batch_size * _projection_count);
   if (!_output_chars_h)
-    throw std::runtime_error("RandomBinaryProjection::_alloc_output_data: allocation failed\n");
+    throw std::runtime_error("RandomBinaryProjection::_alloc_output_data: _output_chars_h allocation failed\n");
 
-#ifndef CPU_ONLY
   if(_GPU) {
+#ifndef CPU_ONLY
     if(free_first) {
       cudaFree(_output_data_d);
       cudaFree(_output_chars_d);
     }
     assert_on_cuda_error(cudaMalloc(&_output_data_d, sizeof(Dtype) * _batch_size * _projection_count));
     assert_on_cuda_error(cudaMalloc(&_output_chars_d, sizeof(char) * _batch_size * _projection_count));
-  }
 #endif
+  } else {
+    if(free_first) {
+      free(_output_data_h);
+    }
+    _output_data_h = (Dtype*)malloc(sizeof(Dtype) * _batch_size * _projection_count);
+    if (!_output_data_h)
+      throw std::runtime_error("RandomBinaryProjection::_alloc_output_data: _output_data_h allocation failed\n");
+  }
 }
 
 template RandomBinaryProjection<float>::RandomBinaryProjection(int projection_count, int batch_size, int dim, int rand_seed, bool use_gpu);
