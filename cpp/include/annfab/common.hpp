@@ -43,6 +43,8 @@ using std::vector;
 using std::cout;
 using std::endl;
 
+#define NO_GPU throw std::runtime_error("Cannot use GPU in CPU-only Caffe: check mode.\n")
+
 #ifndef CPU_ONLY
 
 #if __CUDA_ARCH__ >= 200
@@ -96,13 +98,12 @@ inline int ANNFAB_GET_BLOCKS(const int N) {
     if (status !=  CURAND_STATUS_SUCCESS) { std::cout << annfab::curandGetErrorString(status) << std::endl; assert(false); } \
   } while (0)
 
-#endif  // CPU_ONLY
-
 namespace annfab {
 
 const char* cublasGetErrorString(cublasStatus_t error);
 const char* curandGetErrorString(curandStatus_t error);
 
 }  // namespace annfab
+#endif  // CPU_ONLY
 
 #endif  // ANNFAB_COMMON_HPP_

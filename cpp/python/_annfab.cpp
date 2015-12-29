@@ -32,8 +32,8 @@ namespace annfab {
 typedef float Dtype;
 const int NPY_DTYPE = NPY_FLOAT32;
   
-shared_ptr<RandomBinaryProjection<Dtype> > RBP_Init(int projection_count, int batch_size, int dim, int rand_seed) {
-  shared_ptr<RandomBinaryProjection<Dtype> > rbp(new RandomBinaryProjection<Dtype>(projection_count, batch_size, dim, rand_seed));
+shared_ptr<RandomBinaryProjection<Dtype> > RBP_Init(int projection_count, int batch_size, int dim, int rand_seed, bool use_gpu) {
+  shared_ptr<RandomBinaryProjection<Dtype> > rbp(new RandomBinaryProjection<Dtype>(projection_count, batch_size, dim, rand_seed, use_gpu));
   return rbp;
 }
 

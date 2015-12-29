@@ -6,6 +6,9 @@ project(annfab C CXX)
 # ---[ Using cmake scripts and modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules)
 
+# ---[ Options
+option(CPU_ONLY  "Build Caffe without CUDA support" OFF)
+
 # ---[ Flags
 if(UNIX OR APLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -Wno-sign-compare")

@@ -1,7 +1,17 @@
 set(annfab_LINKER_LIBS "")
 
 # ---[ CUDA
-include(cmake/Cuda.cmake)
+if(CPU_ONLY)
+  message("-- CUDA is disabled. Building without it...")
+  add_definitions(-DCPU_ONLY)
+else()
+  include(cmake/Cuda.cmake)
+  if(NOT HAVE_CUDA)
+    message("-- CUDA is not detected by cmake. Building without it...")
+    add_definitions(-DCPU_ONLY)
+  endif()
+endif()
+
 
 # ---[ Python
 find_package(PythonInterp 2.7)
