@@ -5,12 +5,12 @@ import cProfile
 import argparse
 
 import annfab.storage
-import annfab_examples.hasher
+import annfab.hasher
 try:
     import annfab_examples.batch_hasher
 except:
     pass
-import annfab_examples.utils
+import annfab.utils
 
 
 def create_arg_parser():
@@ -35,15 +35,15 @@ def create_arg_parser():
 
 def generate_model():
     parser = create_arg_parser()
-    args = annfab_examples.utils.parse_command_line(parser)
+    args = annfab.utils.parse_command_line(parser)
 
     # Open the LMDB data base.
     db_name = os.path.basename(args.data)
-    env = annfab_examples.utils.open_database(args.data)
+    env = annfab.utils.open_database(args.data)
 
     # Create the LMDB storage backend
     storage = annfab.storage.LmdbStorage(
-        env, annfab_examples.utils.normalized_image_vector)
+        env, annfab.utils.normalized_image_vector)
 
     if args.batch_size == 1:
         # Create an image hasher.
@@ -62,7 +62,7 @@ def generate_model():
         cursor = txn.cursor()
         iter(cursor)
         for key, value in cursor:
-            hasher.add_image(key, annfab_examples.utils.value_to_image(value))
+            hasher.add_image(key, annfab.utils.value_to_image(value))
 
     if args.batch_size != 1:
         hasher.flush()
