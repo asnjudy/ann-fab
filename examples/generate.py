@@ -6,10 +6,7 @@ import argparse
 
 import annfab.storage
 import annfab.hasher
-try:
-    import annfab.batch_hasher
-except:
-    pass
+import annfab.batch_hasher
 import annfab.utils
 
 
@@ -29,6 +26,7 @@ def create_arg_parser():
                         default=8,
                         help="The dimension of each hash")
     parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument("--gpu", action="store_true")
 
     return parser
 
@@ -51,7 +49,7 @@ def generate_model():
             storage, db_name, args.L, args.m)
     else:
         hasher = annfab.batch_hasher.BatchHasher(
-            storage, db_name, args.L, args.m)
+            storage, db_name, args.L, args.m, args.gpu)
         hasher.set_batch_size(args.batch_size)
 
     if args.profile:
