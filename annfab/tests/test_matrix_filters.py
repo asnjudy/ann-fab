@@ -85,7 +85,6 @@ def test_matrix_filter_expand(test_data):
         assert expanded[i][1] == test_data['il0'][i][1]
 
 
-
 def test_matrix_unique_filter_adapter(test_data):
     vF = nearpy.filters.UniqueFilter()
     vf = vF.filter_vectors(test_data['il0'])
