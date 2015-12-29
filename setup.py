@@ -60,7 +60,7 @@ class PyTest(TestCommand):
 setup(name=project_name,
       packages=find_packages(),
       version=version,
-      description='A set of utilities for tasks based on RabbitMQ',
+      description='Approximate Nearest Neighbor: Faster and Better',
       long_description=open('README.md').read(),
       url='https://github.com/zalando/ann-fab',
       author='Zalando SE',
