@@ -15,6 +15,12 @@ RUN pip install protobuf
 RUN pip install nearpy
 RUN pip install lmdb
 
+
+RUN apt-get install -y cmake cmake-curses-gui
+RUN apt-get install -y libopenblas-dev
+RUN apt-get install -y libboost-python-dev
+
+
 # Replace 1000 with your user / group id
 RUN export uid=1000 gid=1000 && \
     mkdir -p /home/developer && \
