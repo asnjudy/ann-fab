@@ -14,6 +14,15 @@ contributes significantly to the computational requirement.
 The extensions to the NearPy framwork aim to address this, but allowing for parallelisation and also GPU acceleration.
 
 
+# Getting started:
+
+To ensure that the C++ backend is built, run:
+```
+python setup.py build_lib
+```
+This should build and copy the file ```_annfab.so``` to the ```annfab``` module folder.
+
+
 # Running the tests:
 
 ```
