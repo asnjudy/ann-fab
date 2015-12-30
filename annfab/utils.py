@@ -93,3 +93,19 @@ def datum_to_image(datum):
             a[h, :, c] = x[c, h, :] / 255.
 
     return a
+
+
+def image_to_datum(image):
+    datum = proto.Datum()
+    if len(image.shape) == 3:
+        datum.channels = image.shape[0]
+        datum.height = image.shape[1]
+        datum.width = image.shape[2]
+    else:
+        datum.channels = 1
+        datum.height = image.shape[0]
+        datum.width = image.shape[1]
+
+    datum.data = image.tostring()
+
+    return datum
