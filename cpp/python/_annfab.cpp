@@ -27,11 +27,11 @@
 namespace bp = boost::python;
 
 namespace annfab {
-  
+
 // For Python, for now, we'll just always use float as the type.
 typedef float Dtype;
 const int NPY_DTYPE = NPY_FLOAT32;
-  
+
 shared_ptr<RandomBinaryProjection<Dtype> > RBP_Init(int projection_count, int batch_size, int dim, int rand_seed, bool use_gpu) {
   shared_ptr<RandomBinaryProjection<Dtype> > rbp(new RandomBinaryProjection<Dtype>(projection_count, batch_size, dim, rand_seed, use_gpu));
   return rbp;
@@ -41,11 +41,11 @@ bp::object Hash_Matrix(RandomBinaryProjection<Dtype>& rbp, bp::object data_obj) 
   if (rbp.get_dim() == 0)
     throw std::runtime_error("you must set the dimensionality before starting");
   PyArrayObject* arr = reinterpret_cast<PyArrayObject*>(data_obj.ptr());
-  if (!(PyArray_FLAGS(arr) && NPY_ARRAY_C_CONTIGUOUS)) 
+  if (!(PyArray_FLAGS(arr) && NPY_ARRAY_C_CONTIGUOUS))
     throw std::runtime_error("In annfab::Hash_Matrix array must be C contiguous");
-  if (PyArray_NDIM(arr) != 2) 
+  if (PyArray_NDIM(arr) != 2)
     throw std::runtime_error("In annfab::Hash_Matrix array must be 2-d");
-  if (PyArray_TYPE(arr) != NPY_FLOAT32) 
+  if (PyArray_TYPE(arr) != NPY_FLOAT32)
     throw std::runtime_error("In annfab::Hash_Matrix array must be float32");
   if (PyArray_DIMS(arr)[0] != rbp.get_batch_size())
     throw std::runtime_error("In annfab::Hash_Matrix input shape[0] must equal batch size");
@@ -56,18 +56,18 @@ bp::object Hash_Matrix(RandomBinaryProjection<Dtype>& rbp, bp::object data_obj) 
   dims[0] = rbp.get_batch_size();
   dims[1] = rbp.get_projection_count();
   // allocate a numpy matrix where the results will be saved
-  PyObject *o = PyArray_SimpleNew(2, dims, NPY_STRING);
-  
+  PyObject *o = PyArray_SimpleNew(2, dims, NPY_CHAR);
+
   // do hash and save results to the numpy matrix
   rbp.hash_matrix(query_arr, static_cast<char*>(PyArray_DATA((PyArrayObject*)o)));
   bp::handle<> h(o);
   return bp::object(h);
 }
-  
+
 BOOST_PYTHON_MODULE(_annfab) {
   bp::numeric::array::set_module_and_type("numpy", "ndarray");
   import_array();
-  
+
   bp::class_<RandomBinaryProjection<Dtype>, shared_ptr<RandomBinaryProjection<Dtype> >, boost::noncopyable>("RandomBinaryProjection", bp::no_init)
     .def("__init__", bp::make_constructor(&RBP_Init))
     .def("set_dim", &RandomBinaryProjection<Dtype>::set_dim)
