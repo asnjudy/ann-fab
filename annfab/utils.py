@@ -70,6 +70,7 @@ def normalized_image_vector(value):
 
 def plot_image_from_datum(key, datum):
     a = datum_to_image(datum)
+    print a.shape
     plt.imshow(a)
     plt.title(key)
 
@@ -91,6 +92,9 @@ def datum_to_image(datum):
     for c in range(datum.channels):
         for h in range(datum.height):
             a[h, :, c] = x[c, h, :] / 255.
+
+    if datum.channels == 1:
+        return a.reshape(datum.height, datum.width)
 
     return a
 
