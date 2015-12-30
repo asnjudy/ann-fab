@@ -7,7 +7,9 @@ import platform
 import sys
 
 from setuptools import setup, find_packages
+from setuptools import Command
 from setuptools.command.test import test as TestCommand
+from setuptools.command.install import install as InstallCommand
 
 __location__ = os.path.join(
     os.getcwd(), os.path.dirname(inspect.getfile(inspect.currentframe())))
@@ -51,10 +53,40 @@ class PyTest(TestCommand):
             self.pytest_args.extend(['--cov-report', 'html'])
 
     def run_tests(self):
+        self.run_command('build_proto')
+
         import pytest
 
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
+
+
+class CMakeBuild(Command):
+    description = 'Build library using CMake'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def run(self):
+        os.chdir(
+            os.path.join(__location__, 'cpp'))
+        import subprocess
+        try:
+            subprocess.check_call('./redist.sh')
+        except (subprocess.CalledProcessError, OSError):
+            print 'ERROR: Error building CPP module'
+        os.chdir(__location__)
+
+    def finalize_options(self):
+        pass
+
+
+class Install(InstallCommand):
+
+    def do_egg_install(self):
+        self.run_command('build_proto')
+        InstallCommand.do_egg_install(self)
 
 
 setup(name=project_name,
@@ -68,6 +100,6 @@ setup(name=project_name,
       setup_requires=['flake8', 'protobuf-setuptools'],
       install_requires=get_install_requirements('requirements.txt'),
       tests_require=['pytest-cov', 'pytest'],
-      cmdclass={'test': PyTest},
+      cmdclass={'test': PyTest, 'install': Install, 'build_lib': CMakeBuild},
       test_suite='tests',
       include_package_data=True, )

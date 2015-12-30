@@ -19,7 +19,7 @@ RUN pip install lmdb
 RUN apt-get install -y cmake cmake-curses-gui
 RUN apt-get install -y libopenblas-dev
 RUN apt-get install -y libboost-python-dev
-
+RUN apt-get install -y git
 
 # Replace 1000 with your user / group id
 RUN export uid=1000 gid=1000 && \
