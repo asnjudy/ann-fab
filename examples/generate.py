@@ -3,11 +3,21 @@
 import os
 import cProfile
 import argparse
+import logging
+import sys
+
+import config
 
 import annfab.storage
 import annfab.hasher
-import annfab.batch_hasher
 import annfab.utils
+try:
+    import annfab.batch_hasher
+    disable_batch = False
+except ImportError as e:
+    logging.error("Cannot import annfab.batch_hasher: %s" % e)
+    logging.error("Disabling batch mode")
+    disable_batch = True
 
 
 def create_arg_parser():
@@ -31,9 +41,23 @@ def create_arg_parser():
     return parser
 
 
+def check_args(args):
+    if args.batch_size > 1 and disable_batch:
+        logging.error("Batching is disabled. Please select a batch size of 1")
+        return False
+    if args.batch_size == 1 and args.gpu:
+        logging.error("GPU mode is only supported for batched operation.")
+        return False
+
+    return True
+
+
 def generate_model():
     parser = create_arg_parser()
     args = annfab.utils.parse_command_line(parser)
+
+    if not check_args(args):
+        sys.exit()
 
     # Open the LMDB data base.
     db_name = os.path.basename(args.data)
@@ -42,6 +66,11 @@ def generate_model():
     # Create the LMDB storage backend
     storage = annfab.storage.LmdbStorage(
         env, annfab.utils.normalized_image_vector)
+
+    if disable_batch and args.batch_size != 1:
+        logging.info("Batch mode disabled. \
+                      Using a batch size of 1 and not %d" % args.batch_size)
+        args.batch_size = 1
 
     if args.batch_size == 1:
         # Create an image hasher.
@@ -73,4 +102,5 @@ def generate_model():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     generate_model()
