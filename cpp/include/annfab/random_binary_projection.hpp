@@ -64,6 +64,7 @@ private:
   int _projection_count;                         /// The size of the resulting hash vector
   int _dim;                                      /// The dimensionality of the vectors to be projected
   int _batch_size;                               /// Number of vectors that will be projected in parallel
+  int _rand_seed;                                /// The seed used to initialize the random number generator
   Dtype* _output_data_h;                         /// Array to save result of the matrix multiplication
   bool _GPU;                                     /// Flag telling us to use the CPU or GPU implementation
   Dtype* _projection_matrix_h;                   /// pointer to the projection matrix if it is on the host

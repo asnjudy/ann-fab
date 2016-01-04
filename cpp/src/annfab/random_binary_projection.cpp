@@ -32,7 +32,7 @@ void cpu_rng_gaussian(const shared_ptr<std::mt19937>& gen, const int n, Dtype* r
   
 template<typename Dtype>
 RandomBinaryProjection<Dtype>::RandomBinaryProjection(int projection_count, int batch_size, int dim, int rand_seed, bool use_gpu)
-  : _projection_count(projection_count), _dim(dim), _batch_size(batch_size), _GPU(use_gpu) {
+  : _projection_count(projection_count), _dim(dim), _batch_size(batch_size), _rand_seed(rand_seed),  _GPU(use_gpu) {
   assert(dim > 0);
   assert(projection_count > 0);
   assert(batch_size > 0);
@@ -42,14 +42,11 @@ RandomBinaryProjection<Dtype>::RandomBinaryProjection(int projection_count, int 
 #else
     assert_on_cuda_error(curandCreateGenerator(&_gpu_gen,
                          CURAND_RNG_PSEUDO_DEFAULT));
-    // set GPU RNG seed
-    assert_on_cuda_error(curandSetPseudoRandomGeneratorSeed(_gpu_gen,
-                         rand_seed));
     // create handle
     assert_on_cuda_error(cublasCreate(&_handle));
 #endif
   } else {
-    _cpu_gen.reset(new std::mt19937(rand_seed));
+    _cpu_gen.reset(new std::mt19937());
   }
   _alloc_input_data(false);
   _alloc_projection_data(false);
@@ -129,6 +126,9 @@ void RandomBinaryProjection<Dtype>::_alloc_projection_data(bool free_first) {
     if(free_first)
       cudaFree(_projection_matrix_d);
     assert_on_cuda_error(cudaMalloc(&_projection_matrix_d, sizeof(Dtype) * proj_dim));
+    // (re)set GPU RNG seed
+    assert_on_cuda_error(curandSetPseudoRandomGeneratorSeed(_gpu_gen,
+                         _rand_seed));
     gpu_rng_gaussian(_gpu_gen, proj_dim, _projection_matrix_d);
 #endif
   } else {
@@ -137,6 +137,7 @@ void RandomBinaryProjection<Dtype>::_alloc_projection_data(bool free_first) {
     _projection_matrix_h = (Dtype*)malloc(sizeof(Dtype) * proj_dim);
     if (!_projection_matrix_h)
       throw std::runtime_error("RandomBinaryProjection::_alloc_projection_data: allocation failed\n");
+    _cpu_gen->seed(_rand_seed);
     cpu_rng_gaussian(_cpu_gen, proj_dim, _projection_matrix_h);
   }
 }
