@@ -68,7 +68,6 @@ private:
   Dtype* _output_data_h;                         /// Array to save result of the matrix multiplication
   bool _GPU;                                     /// Flag telling us to use the CPU or GPU implementation
   Dtype* _projection_matrix_h;                   /// pointer to the projection matrix if it is on the host
-  shared_ptr<std::mt19937> _cpu_gen;             /// pointer to CPU based random number generator
   
 #ifndef CPU_ONLY
   void _hash_matrix_gpu(const Dtype* query, char* hash);

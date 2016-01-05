@@ -1,6 +1,9 @@
 #include "annfab/math_functions.hpp"
 #include "annfab/random_binary_projection.hpp"
 
+#include <future>
+#include <thread>
+
 #ifndef CPU_ONLY
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -23,11 +26,28 @@ void gpu_rng_gaussian(curandGenerator_t& gen, const int n, double* r) {
 }
 #endif
 
-template <typename Dtype>
-void cpu_rng_gaussian(const shared_ptr<std::mt19937>& gen, const int n, Dtype* r) {
-  std::normal_distribution<> d(0,1);
-  for (int i = 0; i < n; ++i)
-    r[i] = d(*gen);
+template <typename Dtype, typename Generator=std::mt19937>
+void cpu_rng_gaussian(const int n, int seed, Dtype* r) {
+  const int NUM_THREADS = 4;
+  std::vector<std::future<void> > f(NUM_THREADS);
+  int loop_length = n / NUM_THREADS;
+  int offset = 0;
+  for (int i = 0; i < NUM_THREADS; ++i) {
+    if (i == NUM_THREADS - 1)
+      loop_length = n - offset;
+    auto mylambda = [=]() -> void {
+      Generator gen(seed);
+      std::normal_distribution<Dtype> d(0,1);
+      for (int j = offset; j < offset + loop_length; ++j)
+        r[j] = d(gen);
+    };
+    f[i] = std::async(std::launch::async, mylambda);
+    offset += loop_length;
+    seed += 100;
+  }
+  for (int i = 0; i < NUM_THREADS; ++i) {
+    f[i].wait();
+  }
 }
   
 template<typename Dtype>
@@ -45,8 +65,6 @@ RandomBinaryProjection<Dtype>::RandomBinaryProjection(int projection_count, int 
     // create handle
     assert_on_cuda_error(cublasCreate(&_handle));
 #endif
-  } else {
-    _cpu_gen.reset(new std::mt19937());
   }
   _alloc_input_data(false);
   _alloc_projection_data(false);
@@ -117,14 +135,15 @@ template<typename Dtype>
 void RandomBinaryProjection<Dtype>::_alloc_projection_data(bool free_first) {
   //for random number generation, we must generate an even number of numbers
   int proj_dim = _dim * _projection_count;
-  if (proj_dim % 2 != 0)
-    ++proj_dim;
 
   if(_GPU) {
 #ifndef CPU_ONLY
     // free the last projection matrix if needed
     if(free_first)
       cudaFree(_projection_matrix_d);
+    // for whatever reason, the projection dim must be even in the GPU case
+    if (proj_dim % 2 != 0)
+      ++proj_dim;
     assert_on_cuda_error(cudaMalloc(&_projection_matrix_d, sizeof(Dtype) * proj_dim));
     // (re)set GPU RNG seed
     assert_on_cuda_error(curandSetPseudoRandomGeneratorSeed(_gpu_gen,
@@ -137,8 +156,7 @@ void RandomBinaryProjection<Dtype>::_alloc_projection_data(bool free_first) {
     _projection_matrix_h = (Dtype*)malloc(sizeof(Dtype) * proj_dim);
     if (!_projection_matrix_h)
       throw std::runtime_error("RandomBinaryProjection::_alloc_projection_data: allocation failed\n");
-    _cpu_gen->seed(_rand_seed);
-    cpu_rng_gaussian(_cpu_gen, proj_dim, _projection_matrix_h);
+    cpu_rng_gaussian(proj_dim, _rand_seed, _projection_matrix_h);
   }
 }
 
