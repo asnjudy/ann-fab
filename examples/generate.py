@@ -22,7 +22,7 @@ except ImportError as e:
 
 def create_arg_parser():
     parser = argparse.ArgumentParser(
-        description="Show images in an lmdb database")
+        description="Generate a nearest neighbor filter engine")
 
     parser.add_argument("--outfile",
                         default=None,
